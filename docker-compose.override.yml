@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  web:
+    # bind-mount project directory so changes on host appear instantly in container
+    volumes:
+      - .:/app
+    environment:
+      - FLASK_DEBUG=1
+      - FLASK_APP=app.py
+    # override command to ensure the reloader is active
+    command: flask run --host=0.0.0.0 --reload
