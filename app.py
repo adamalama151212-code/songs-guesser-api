@@ -1,3 +1,4 @@
+# (No code changes needed, just commit and push the current version)
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3
@@ -93,6 +94,7 @@ def get_song_by_artist():
             FROM songs s 
             JOIN artist a ON s.artist_id = a.id 
             WHERE a.name = ?
+            ORDER BY RANDOM() 
             LIMIT 1
         """
         
@@ -148,6 +150,47 @@ def get_all_songs_by_artist():
             conn.close()
 
 
+# --- ENDPOINT: Pobierz izolowane ścieżki dla piosenki ---
+@app.route("/songs/isolated-tracks", methods=["POST"])
+def get_isolated_tracks_for_song():
+    conn = None
+    try:
+        data = request.get_json()
+        if not data or 'song_name' not in data or 'artist_name' not in data:
+            return jsonify({"error": "Brak 'song_name' i 'artist_name' w żądaniu"}), HTTPStatus.BAD_REQUEST
+        
+        song_name = data['song_name']
+        artist_name = data['artist_name']
+        
+        conn = get_db_connection()
+        
+        # SQL JOIN - znajdź izolowane ścieżki dla konkretnej piosenki artysty
+        query = """
+            SELECT it.track_type, it.filename 
+            FROM isolated_tracks it
+            JOIN songs s ON it.song_id = s.id
+            JOIN artist a ON s.artist_id = a.id 
+            WHERE s.name = ? AND a.name = ?
+            ORDER BY it.track_type
+        """
+        
+        rows = conn.execute(query, (song_name, artist_name)).fetchall()
+        
+        if rows:
+            tracks = {}
+            for row in rows:
+                tracks[row["track_type"]] = row["filename"]
+            return jsonify({"tracks": tracks})
+        else:
+            return jsonify({"error": f"Nie znaleziono ścieżek dla piosenki '{song_name}' artysty '{artist_name}'"}), HTTPStatus.NOT_FOUND
+            
+    except Exception as e:
+        return jsonify({"error": f"Błąd serwera: {e}"}), HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        if conn:
+            conn.close()
+
+
 if __name__ == "__main__":
     ARTIST_SCHEMA = """
         CREATE TABLE IF NOT EXISTS artist(
@@ -166,5 +209,17 @@ if __name__ == "__main__":
         )
     """
     create_initial_schema(MASTER_DB_PATH, SONGS_SCHEMA)
+
+    # Tabela dla izolowanych ścieżek audio
+    ISOLATED_TRACKS_SCHEMA = """
+        CREATE TABLE IF NOT EXISTS isolated_tracks(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            track_type TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            song_id INTEGER,
+            FOREIGN KEY (song_id) REFERENCES songs(id)
+        )
+    """
+    create_initial_schema(MASTER_DB_PATH, ISOLATED_TRACKS_SCHEMA)
     
     app.run(host='0.0.0.0', debug=True)
