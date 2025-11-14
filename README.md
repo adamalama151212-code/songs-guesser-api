@@ -9,6 +9,8 @@ Krótki przewodnik jak uruchomić i testować aplikację Flask zawartą w tym re
 - `docker-compose.yml` — konfiguracja Compose (prod-like).
 - `docker-compose.override.yml` — ustawienia dla development (bind mount, FLASK_DEBUG=1, `--reload`).
 
+## Przed odpaleniem Dockera umieść w folderze /data baze danych udostępnioną pod tym linkiem: https://github.com/adamalama151212-code/songs-guesser-database
+
 ## Szybkie komendy (PowerShell)
 
 ### 1) Build obrazu lokalnie
