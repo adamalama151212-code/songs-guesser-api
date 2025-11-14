@@ -53,7 +53,7 @@ docker compose down
 
 ### 5) Szybkie testy HTTP
 - PowerShell:
-```powershell
+```
 Invoke-RestMethod http://localhost:5000/artists
 ```
 
